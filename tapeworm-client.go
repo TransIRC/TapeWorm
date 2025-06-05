@@ -20,9 +20,9 @@ import (
 )
 
 const (
-        DnsServerAddress  = "144.202.58.207:5353"
-        TunnelDomain      = "dns.transirc.chat"
-        TunnelPassword    = "V7xgLm29pR3qtWz"
+        DnsServerAddress  = "your_dns_server_ip:5353" //update with ip of server
+        TunnelDomain      = "subdomain.domain.tld" // update with your servers domain
+        TunnelPassword    = "yourpassword123" // ensure your password matches the server
         MaxDNSPacketSize  = 1500
         MaxDNSLabelSize   = 63 // Maximum length for a DNS label (RFC 1035)
         RawChunkSize      = 46 // 46 raw bytes -> 62 base64 chars + 'd' prefix = 63 chars.
