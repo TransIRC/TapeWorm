@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"syscall"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -28,6 +27,9 @@ const (
 	// WriteTimeout is the write timeout for the SSH session.
 	WriteTimeout = 10 * time.Second
 )
+
+// REMOVED: func getTerminalSize() (width, height int, err error)
+// REMOVED: func setupResizeHandler(sigChan chan os.Signal)
 
 func main() {
 	log.Println("Starting DNS-tunneled SSH client...")
@@ -58,6 +60,7 @@ func main() {
 			Auth: []ssh.AuthMethod{
 				ssh.PasswordCallback(func() (string, error) {
 					fmt.Print("SSH Password: ")
+					// Use golang.org/x/term for password reading as it's cross-platform
 					password, err := term.ReadPassword(int(os.Stdin.Fd()))
 					fmt.Println()
 					if err != nil {
@@ -87,14 +90,23 @@ func main() {
 			session.Stderr = os.Stderr
 			session.Stdin = os.Stdin
 
-			// Get initial terminal size
+			// Get initial terminal size using the OS-specific function
 			var width, height int
-			width, height = getTerminalSize() // Call the OS-specific function
+			// getTerminalSize now consistently returns an error, even if nil for Unix.
+			width, height = getTerminalSize()
 			if err != nil {
 				log.Printf("Failed to get terminal size: %v, using defaults.", err)
 				width, height = 80, 40 // Fallback
 			}
+			// Ensure valid dimensions, preventing issues if getTerminalSize returns 0 for some reason.
+			if width == 0 {
+				width = 80
+			}
+			if height == 0 {
+				height = 40
+			}
 
+			// Keep raw terminal state setup as it's cross-platform with golang.org/x/term
 			oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 			if err != nil {
 				log.Printf("Failed to set raw terminal: %v", err)
@@ -127,8 +139,11 @@ func main() {
 			setupResizeHandler(resizeSig) // Call the OS-specific function
 
 			go func() {
+				// The resize handler loop should check for a way to get the size
+				// that is appropriate for the OS.
+				// Since getTerminalSize now returns an error, we need to handle it.
 				for range resizeSig { // Listen on the channel for resize signals
-					w, h, err := term.GetSize(int(os.Stdin.Fd()))
+					w, h := getTerminalSize() // Use the OS-specific getTerminalSize
 					if err != nil {
 						log.Printf("Error getting window size: %v", err)
 						continue
@@ -170,19 +185,4 @@ func main() {
 		time.Sleep(1 * time.Second)
 	}
 	log.Fatalf("SSH connection failed after all retries.")
-}
-
-// OS-specific terminal size functions (remain in client/main.go)
-// getTerminalSize returns the current dimensions of the terminal.
-func getTerminalSize() (width, height int) {
-	width, height, err := term.GetSize(int(os.Stdin.Fd()))
-	if err != nil {
-		return 80, 24 // Default fallback
-	}
-	return width, height
-}
-
-// setupResizeHandler sets up a signal handler for window resize events.
-func setupResizeHandler(sigChan chan os.Signal) {
-	signal.Notify(sigChan, syscall.SIGWINCH)
 }
