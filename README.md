@@ -68,9 +68,9 @@ go build -o tapeworm-server tapeworm-server.go
 
 ```
 # Compile the client
-go build -o tapeworm-client tapeworm-client.go
+go build -o tapeworm-client tapeworm-client.go term_resize_unix.go (or for windows term_resize_windows.go)
 
-# Or just run the prebuilt binary (hardcoded to your domain + user)
+# The just run the binary
 ./tapeworm-client
 
 ```
