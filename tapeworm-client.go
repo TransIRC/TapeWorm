@@ -7,16 +7,23 @@ import (
 	"os"
 	"os/signal"
 	"time"
+	"io"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 
-	"github.com/TransIRC/cesium-core"
+	"github.com/TransIRC/cesiumlib"
 )
+
+func init() {
+	// This line will disable all standard 'log' package output
+	// for their entire application, including any logs from cesiumlib.
+	log.SetOutput(io.Discard)
+}
 
 const (
 	// DnsServerAddress is the address of the DNS tunnel server. Update this with your server's IP and port.
-	DnsServerAddress = "0.0.0.0:53"
+	DnsServerAddress = "1.2.3.4:5353"
 	// TunnelDomain is the domain used for DNS tunneling. Update this with your server's configured domain.
 	TunnelDomain = "sub.domain.tld"
 	// TunnelPassword is the password for the DNS tunnel. Ensure this matches your server's password.
@@ -41,13 +48,13 @@ func main() {
 		log.Fatalf("Failed to read username: %v", err)
 	}
 
-	var dnsTun *cesiumcore.DnsTunnelConn
+	var dnsTun *cesiumlib.DnsTunnelConn
 
 	const maxRetries = 5
 	for i := 0; i < maxRetries; i++ {
 		log.Printf("Attempting to establish DNS tunnel (retry %d/%d)...", i+1, maxRetries)
 		// Use the NewDnsTunnelConn from cesium-core, passing the domain and password.
-		dnsTun, err = cesiumcore.NewDnsTunnelConn(DnsServerAddress, TunnelDomain, TunnelPassword)
+		dnsTun, err = cesiumlib.NewDnsTunnelConn(DnsServerAddress, TunnelDomain, TunnelPassword)
 		if err != nil {
 			log.Printf("DNS tunnel establishment failed: %v", err)
 			time.Sleep(2 * time.Second)
